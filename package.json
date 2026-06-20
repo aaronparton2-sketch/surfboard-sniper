@@ -1,0 +1,12 @@
+{
+  "name": "surfboard-sniper",
+  "version": "1.0.0",
+  "description": "Scans Facebook Marketplace for surfboards matching your buy box and pings you the second one lands.",
+  "main": "src/matcher.js",
+  "scripts": {
+    "demo": "node src/demo.js"
+  },
+  "keywords": ["surfboard", "facebook-marketplace", "n8n", "apify", "automation", "deal-finder"],
+  "author": "Aaron Parton",
+  "license": "MIT"
+}

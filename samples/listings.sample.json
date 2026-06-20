@@ -1,0 +1,74 @@
+[
+  {
+    "id": "1000000000000001",
+    "marketplace_listing_title": "JS Industries Monsta 6'2 33L great condition",
+    "listing_price": { "amount": "650" },
+    "primary_listing_photo": { "photo_image_url": "https://example.com/photo1.jpg" },
+    "listingUrl": "https://www.facebook.com/marketplace/item/1000000000000001",
+    "is_sold": false,
+    "location": { "reverse_geocode": { "city": "Scarborough", "state": "WA" }, "latitude": -31.8945, "longitude": 115.7575 }
+  },
+  {
+    "id": "1000000000000002",
+    "marketplace_listing_title": "Pyzel Ghost 6'4 - barely used",
+    "listing_price": { "amount": "780" },
+    "primary_listing_photo": { "photo_image_url": "https://example.com/photo2.jpg" },
+    "listingUrl": "https://www.facebook.com/marketplace/item/1000000000000002",
+    "is_sold": false,
+    "location": { "reverse_geocode": { "city": "Fremantle", "state": "WA" }, "latitude": -32.0569, "longitude": 115.7439 }
+  },
+  {
+    "id": "1000000000000003",
+    "marketplace_listing_title": "DHD 5'10 surfboard, no dims listed, pickup Cottesloe",
+    "listing_price": { "amount": "500" },
+    "primary_listing_photo": { "photo_image_url": "https://example.com/photo3.jpg" },
+    "listingUrl": "https://www.facebook.com/marketplace/item/1000000000000003",
+    "is_sold": false,
+    "location": { "reverse_geocode": { "city": "Cottesloe", "state": "WA" }, "latitude": -31.9959, "longitude": 115.7581 }
+  },
+  {
+    "id": "1000000000000004",
+    "marketplace_listing_title": "Surfboard bag 6'6 padded travel cover",
+    "listing_price": { "amount": "60" },
+    "primary_listing_photo": { "photo_image_url": "https://example.com/photo4.jpg" },
+    "listingUrl": "https://www.facebook.com/marketplace/item/1000000000000004",
+    "is_sold": false,
+    "location": { "reverse_geocode": { "city": "Perth", "state": "WA" }, "latitude": -31.9505, "longitude": 115.8605 }
+  },
+  {
+    "id": "1000000000000005",
+    "marketplace_listing_title": "Channel Islands Rocket 6'1 32L",
+    "listing_price": { "amount": "1200" },
+    "primary_listing_photo": { "photo_image_url": "https://example.com/photo5.jpg" },
+    "listingUrl": "https://www.facebook.com/marketplace/item/1000000000000005",
+    "is_sold": false,
+    "location": { "reverse_geocode": { "city": "Trigg", "state": "WA" }, "latitude": -31.8703, "longitude": 115.7556 }
+  },
+  {
+    "id": "1000000000000006",
+    "marketplace_listing_title": "Torq mini malibu 7'2 beginner board",
+    "listing_price": { "amount": "300" },
+    "primary_listing_photo": { "photo_image_url": "https://example.com/photo6.jpg" },
+    "listingUrl": "https://www.facebook.com/marketplace/item/1000000000000006",
+    "is_sold": false,
+    "location": { "reverse_geocode": { "city": "Perth", "state": "WA" }, "latitude": -31.9505, "longitude": 115.8605 }
+  },
+  {
+    "id": "1000000000000007",
+    "marketplace_listing_title": "Haydenshapes Hypto Krypto 6'0 32L SOLD",
+    "listing_price": { "amount": "700" },
+    "primary_listing_photo": { "photo_image_url": "https://example.com/photo7.jpg" },
+    "listingUrl": "https://www.facebook.com/marketplace/item/1000000000000007",
+    "is_sold": true,
+    "location": { "reverse_geocode": { "city": "Perth", "state": "WA" }, "latitude": -31.9505, "longitude": 115.8605 }
+  },
+  {
+    "id": "1000000000000008",
+    "marketplace_listing_title": "JS Blak Box 6'3 34L immaculate",
+    "listing_price": { "amount": "850" },
+    "primary_listing_photo": { "photo_image_url": "https://example.com/photo8.jpg" },
+    "listingUrl": "https://www.facebook.com/marketplace/item/1000000000000008",
+    "is_sold": false,
+    "location": { "reverse_geocode": { "city": "Sydney", "state": "NSW" }, "latitude": -33.8688, "longitude": 151.2093 }
+  }
+]

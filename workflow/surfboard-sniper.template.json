@@ -1,0 +1,134 @@
+{
+  "name": "Surfboard Sniper (Marketplace)",
+  "nodes": [
+    {
+      "id": "sched",
+      "name": "Every 30 min (6am-11pm)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0],
+      "parameters": {
+        "rule": { "interval": [{ "field": "cronExpression", "expression": "*/30 6-23 * * *" }] }
+      }
+    },
+    {
+      "id": "apify",
+      "name": "Apify: scrape Marketplace",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [220, 0],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apify.com/v2/acts/apify~facebook-marketplace-scraper/run-sync-get-dataset-items",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"startUrls\": [{\"url\": \"https://www.facebook.com/marketplace/YOUR_CITY/search?query=surfboard&sortBy=creation_time_descend&exact=false\"}], \"resultsLimit\": 20, \"includeListingDetails\": false}",
+        "options": { "timeout": 180000 }
+      },
+      "credentials": {
+        "httpHeaderAuth": { "name": "Apify (Bearer)" }
+      },
+      "notes": "Header Auth credential: Name = Authorization, Value = Bearer <YOUR_APIFY_TOKEN>"
+    },
+    {
+      "id": "matcher",
+      "name": "Match buy box",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 0],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Mirror of src/matcher.js. Edit BRANDS + CONFIG to make it yours.\nconst BRANDS = {\n  \"JS\": { aliases: [\"js industries\", \"jason stevenson\"], strict: [\"js\"] },\n  \"DHD\": { aliases: [\"darren handley designs\", \"darren handley\"], strict: [\"dhd\"] },\n  \"Pyzel\": { aliases: [\"pyzel\"], strict: [] },\n  \"Channel Islands\": { aliases: [\"channel islands\", \"channel island\", \"al merrick\"], strict: [\"ci\"] },\n  \"Haydenshapes\": { aliases: [\"haydenshapes\", \"hayden shapes\"], strict: [\"hs\", \"hayden\"] },\n};\nconst CONFIG = {\n  brands: [\"JS\", \"DHD\", \"Pyzel\", \"Channel Islands\", \"Haydenshapes\"],\n  minLengthIn: 68, maxLengthIn: 78, minVolumeL: 30, maxPrice: 900,\n  regionPattern: /perth|\\bwa\\b|western australia/,\n  centre: { lat: -31.9505, lon: 115.8605 }, radiusKm: 30,\n};\nconst EXCLUDE_TITLE = [\"surfboard bag\",\"board bag\",\"board cover\",\"surfboard sock\",\"fins only\",\"fin set\",\"surfboard fin\",\" fins\",\"kitesurf\",\"kiteboard\",\"wakeboard\",\"skimboard\",\"bodyboard\",\"boogie board\",\"sup \",\"paddle board\",\"wetsuit\",\"leash only\",\" rack\",\"traction pad\",\"deck grip\"];\nfunction norm(s){return (s||\"\").toString().toLowerCase().replace(/[‘’ʼ′]/g,\"'\").replace(/[“”ʺ″]/g,'\"').replace(/\\s+/g,\" \").trim();}\nfunction escapeRe(s){return s.replace(/[.*+?^${}()|[\\]\\\\]/g,\"\\\\$&\");}\nfunction matchBrand(t){for(const b of CONFIG.brands){const d=BRANDS[b];if(!d)continue;for(const a of d.aliases)if(t.includes(a))return{brand:b,alias:a,strict:false};for(const a of d.strict)if(new RegExp(\"\\\\b\"+escapeRe(a)+\"\\\\b\").test(t))return{brand:b,alias:a,strict:true};}return null;}\nfunction parseLengthIn(t){const re=/\\b([4-9])\\s*(?:['\"]|ft|feet)\\s*(\\d{1,2})?/g;let m;while((m=re.exec(t))){const ft=parseInt(m[1],10);const inch=m[2]!==undefined?parseInt(m[2],10):0;if(inch>11)continue;return ft*12+inch;}return null;}\nfunction parseVolumeL(t){const re=/(\\d{2}(?:\\.\\d)?)\\s*(?:l\\b|lt\\b|litres?\\b|liters?\\b)/g;let m;while((m=re.exec(t))){const v=parseFloat(m[1]);if(v>=15&&v<=70)return v;}return null;}\nfunction haversineKm(a,b){const R=6371,r=d=>d*Math.PI/180;const dLat=r(b.lat-a.lat),dLon=r(b.lon-a.lon);const s=Math.sin(dLat/2)**2+Math.cos(r(a.lat))*Math.cos(r(b.lat))*Math.sin(dLon/2)**2;return 2*R*Math.asin(Math.sqrt(s));}\nfunction getTitle(l){return l.marketplace_listing_title||l.listingTitle||l.title||\"\";}\nfunction getPrice(l){const lp=l.listing_price||l.listingPrice||{};if(lp.amount!=null&&!isNaN(parseFloat(lp.amount)))return Math.round(parseFloat(lp.amount));const f=lp.formatted_amount_zeros_stripped||lp.formatted_amount||l.price||\"\";const d=(\"\"+f).replace(/[^\\d]/g,\"\");return d?parseInt(d,10):null;}\nfunction getLoc(l){const rg=(l.location&&l.location.reverse_geocode)||{};const text=(rg.city_page&&rg.city_page.display_name)||[rg.city,rg.state].filter(Boolean).join(\", \")||(l.locationText&&l.locationText.text)||null;const lat=l.location&&(l.location.latitude??l.location.lat);const lon=l.location&&(l.location.longitude??l.location.lon);return{text,lat:typeof lat===\"number\"?lat:null,lon:typeof lon===\"number\"?lon:null};}\nfunction getPhoto(l){return (l.primary_listing_photo&&l.primary_listing_photo.photo_image_url)||(l.listingPhotos&&l.listingPhotos[0]&&l.listingPhotos[0].image&&l.listingPhotos[0].image.uri)||null;}\nfunction getUrl(l){return l.listingUrl||l.itemUrl||(l.id?(\"https://www.facebook.com/marketplace/item/\"+l.id):null);}\nfunction regionCheck(loc){if(loc.lat!=null&&loc.lon!=null&&CONFIG.centre&&CONFIG.radiusKm){const km=Math.round(haversineKm(CONFIG.centre,{lat:loc.lat,lon:loc.lon}));return{ok:km<=CONFIG.radiusKm,km};}if(CONFIG.regionPattern)return{ok:CONFIG.regionPattern.test(norm(loc.text||\"\")),km:null};return{ok:true,km:null};}\nfunction matchListing(l){const title=norm(getTitle(l));if(l.is_sold===true||l.isSold===true)return{isMatch:false};if(!title)return{isMatch:false};if(EXCLUDE_TITLE.some(k=>title.includes(k)))return{isMatch:false};const brand=matchBrand(title);if(!brand)return{isMatch:false};const unknowns=[];const price=getPrice(l);if(price==null)unknowns.push(\"price\");else if(price>CONFIG.maxPrice)return{isMatch:false};const length_in=parseLengthIn(title);if(length_in==null)unknowns.push(\"length\");else if(length_in<CONFIG.minLengthIn||length_in>CONFIG.maxLengthIn)return{isMatch:false};const volume_l=parseVolumeL(title);if(volume_l==null)unknowns.push(\"volume\");else if(volume_l<CONFIG.minVolumeL)return{isMatch:false};const loc=getLoc(l);const region=regionCheck(loc);if(!region.ok)return{isMatch:false};const confidence=(brand.strict||unknowns.length)?\"review\":\"high\";return{isMatch:true,confidence,brand:brand.brand,brandAlias:brand.alias,price,length_in,volume_l,distance_km:region.km,region:loc.text,unknowns};}\nconst listings=$input.all().map(i=>i.json);const out=[];\nfor(const l of listings){const r=matchListing(l);if(!r.isMatch)continue;out.push({json:{listing_id:String(l.id??getUrl(l)),title:getTitle(l)||null,price:r.price,url:getUrl(l),image_url:getPhoto(l),brand:r.brand,brand_alias:r.brandAlias,length_in:r.length_in,volume_l:r.volume_l,distance_km:r.distance_km,region:r.region,confidence:r.confidence,unknowns:r.unknowns}});}\nreturn out;\n"
+      }
+    },
+    {
+      "id": "insert",
+      "name": "Supabase: insert (dedupe)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 0],
+      "parameters": {
+        "method": "POST",
+        "url": "https://YOUR_PROJECT.supabase.co/rest/v1/surfboard_listings",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Prefer", "value": "return=representation,resolution=ignore-duplicates" }] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({listing_id:$json.listing_id,title:$json.title,price:$json.price,url:$json.url,image_url:$json.image_url,brand:$json.brand,brand_alias:$json.brand_alias,length_in:$json.length_in,volume_l:$json.volume_l,distance_km:$json.distance_km,region:$json.region,confidence:$json.confidence,unknowns:$json.unknowns}) }}",
+        "options": {}
+      },
+      "credentials": { "supabaseApi": { "name": "Supabase account" } }
+    },
+    {
+      "id": "filter",
+      "name": "Only new rows",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [820, 0],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "loose" },
+          "conditions": [{ "id": "c1", "leftValue": "={{$json.listing_id}}", "rightValue": "", "operator": { "type": "string", "operation": "notEmpty", "singleValue": true } }],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "caption",
+      "name": "Build caption",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1000, 0],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Mirror of src/caption.js.\nconst j=$json;\nfunction ftin(inch){if(inch==null)return null;const f=Math.floor(inch/12),i=inch%12;return `${f}'${i}\"`;}\nconst CURRENCY=\"A$\";\nconst len=j.length_in!=null?ftin(j.length_in):\"length n/a\";\nconst vol=j.volume_l!=null?`${j.volume_l}L`:\"vol n/a\";\nconst price=j.price!=null?`${CURRENCY}${j.price}`:\"price n/a\";\nconst dist=j.distance_km!=null?`${j.distance_km}km away`:(j.region||\"\");\nconst flag=j.confidence===\"review\"?\"\\n⚠️ dims unconfirmed, check the photo\":\"\";\nconst caption=`🏄 NEW ${j.brand} — ${price}\\n${j.title||\"\"}\\n📏 ${len} · ${vol} · 📍 ${dist}${flag}\\n\\n💬 \\\"Hey mate, is this still available? Keen to come have a look 👀\\\"\\n\\n<a href=\\\"${j.url}\\\">Open listing ↗</a>`;\nreturn { json: { ...j, caption } };\n"
+      }
+    },
+    {
+      "id": "tg",
+      "name": "Telegram alert",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1220, 0],
+      "parameters": {
+        "operation": "sendPhoto",
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "file": "={{$json.image_url}}",
+        "additionalFields": { "caption": "={{$json.caption}}", "parse_mode": "HTML" }
+      },
+      "credentials": { "telegramApi": { "name": "Telegram Bot" } }
+    },
+    {
+      "id": "mark",
+      "name": "Mark alerted",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1440, 0],
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://YOUR_PROJECT.supabase.co/rest/v1/surfboard_listings?listing_id=eq.{{$json.listing_id}}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({status:'alerted', alerted_at: new Date().toISOString()}) }}",
+        "options": {}
+      },
+      "credentials": { "supabaseApi": { "name": "Supabase account" } }
+    }
+  ],
+  "connections": {
+    "Every 30 min (6am-11pm)": { "main": [[{ "node": "Apify: scrape Marketplace", "type": "main", "index": 0 }]] },
+    "Apify: scrape Marketplace": { "main": [[{ "node": "Match buy box", "type": "main", "index": 0 }]] },
+    "Match buy box": { "main": [[{ "node": "Supabase: insert (dedupe)", "type": "main", "index": 0 }]] },
+    "Supabase: insert (dedupe)": { "main": [[{ "node": "Only new rows", "type": "main", "index": 0 }]] },
+    "Only new rows": { "main": [[{ "node": "Build caption", "type": "main", "index": 0 }]] },
+    "Build caption": { "main": [[{ "node": "Telegram alert", "type": "main", "index": 0 }]] },
+    "Telegram alert": { "main": [[{ "node": "Mark alerted", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1", "timezone": "Australia/Perth" }
+}
