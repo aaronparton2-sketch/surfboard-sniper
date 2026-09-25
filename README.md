@@ -100,3 +100,7 @@ redistribute scraped data. You are responsible for how you run it.
 ## License
 
 MIT. Do what you like with it. See [`LICENSE`](LICENSE).
+
+---
+
+**Built by [Mycelium AI](https://www.myceliumai.com.au)**, a Perth agency that builds websites, runs Google and Meta ads, and automates the admin for small businesses. Follow the builds on Instagram at [@aaronautomates](https://www.instagram.com/aaronautomates/).
